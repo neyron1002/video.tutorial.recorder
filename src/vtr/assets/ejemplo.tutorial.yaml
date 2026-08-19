@@ -1,0 +1,55 @@
+# Guion de ejemplo. Grábalo con:  vtr record tutorial.yaml
+# Esquema completo:                vtr schema
+title: "Tutorial de ejemplo"
+output: "salida/tutorial-ejemplo.mp4"
+base_url: "https://playwright.dev"
+
+voice: "es-MX-DaliaNeural"   # vtr voices -l es
+rate: "+0%"
+screen: "1600x900"
+fps: 30
+engine: "xvfb"               # navegador visible en pantalla virtual, con cursor real
+browser_ui: true             # muestra la barra de direcciones
+
+steps:
+  - name: "Introducción"
+    narrate: >-
+      En este tutorial veremos cómo movernos por el sitio, buscar contenido
+      y llegar a la sección de documentación.
+    actions:
+      - goto: "/"
+      - wait_for: { load_state: "networkidle" }
+
+  - name: "Recorrido inicial"
+    narrate: >-
+      Esta es la página principal. En la parte superior encontramos el menú
+      de navegación con los accesos más importantes.
+    actions:
+      - highlight: { selector: "nav.navbar", label: "Menú principal", duration: 4 }
+      - wait: 1
+      - scroll: { by: 600 }
+
+  - name: "Abrir la documentación"
+    narrate: >-
+      Hacemos clic en Docs para entrar a la documentación.
+    actions:
+      - scroll: { y: 0 }
+      - click: "nav >> text=Docs"
+      - wait_for: { load_state: "networkidle" }
+
+  - name: "Buscar"
+    narrate: >-
+      Desde el buscador podemos encontrar cualquier tema en segundos.
+      Escribimos el término y revisamos los resultados.
+    actions:
+      - click: "button.DocSearch-Button"
+      - type: { selector: "input.DocSearch-Input", text: "screenshots", delay: 90 }
+      - wait: 2
+      - note: { text: "Los resultados se filtran mientras escribes", duration: 3 }
+      - press: "Escape"
+
+  - name: "Cierre"
+    narrate: >-
+      Con esto terminamos el recorrido. Gracias por acompañarnos.
+    actions:
+      - screenshot: { path: "capturas/final.png" }

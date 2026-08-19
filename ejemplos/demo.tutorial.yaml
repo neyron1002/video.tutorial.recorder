@@ -1,0 +1,62 @@
+# Guion de demostración: recorre un sitio público real.
+#   vtr record ejemplos/demo.tutorial.yaml
+title: "Recorrido por la documentación de Playwright"
+output: "../salida/demo.mp4"
+base_url: "https://playwright.dev"
+
+voice: "es-MX-DaliaNeural"
+rate: "-3%"
+screen: "1600x900"
+fps: 30
+engine: "xvfb"
+browser_ui: true
+
+steps:
+  - name: "Introducción"
+    narrate: >-
+      En este recorrido veremos cómo está organizado el sitio, cómo llegar a la
+      documentación y cómo usar el buscador para encontrar cualquier tema.
+    actions:
+      - goto: "/"
+      - wait_for: { load_state: "networkidle" }
+
+  - name: "La página principal"
+    narrate: >-
+      Esta es la página de inicio. En la parte superior está el menú principal,
+      con los accesos a la documentación, la interfaz de programación y la
+      comunidad.
+    actions:
+      - highlight: { selector: "nav.navbar", label: "Menú principal", duration: 5 }
+      - wait: 1.5
+      - scroll: { by: 700 }
+
+  - name: "Entrar a la documentación"
+    narrate: >-
+      Al hacer clic en Docs entramos a la guía completa, organizada por temas en
+      la barra lateral izquierda.
+    actions:
+      - scroll: { y: 0 }
+      - click: "nav >> text=Docs"
+      - wait_for: { load_state: "networkidle" }
+      - wait: 1
+
+  - name: "El buscador"
+    narrate: >-
+      El buscador es la forma más rápida de llegar a un tema concreto. Basta con
+      escribir una palabra y los resultados aparecen mientras tecleamos.
+    actions:
+      - click: "button.DocSearch-Button"
+      - type: { selector: "input.DocSearch-Input", text: "screenshots", delay: 90 }
+      - wait: 2
+      - note: { text: "Los resultados se filtran en tiempo real", duration: 3.5 }
+
+  - name: "Cierre"
+    narrate: >-
+      Con esto cerramos el recorrido. Ya sabes moverte por el menú, la
+      documentación y el buscador.
+    actions:
+      # El buscador sigue abierto: se cierra aquí para que el cartel del paso
+      # anterior se vea sobre los resultados y no sobre la página vacía.
+      - press: "Escape"
+      - screenshot: { path: "capturas/demo-final.png" }
+      - wait: 1

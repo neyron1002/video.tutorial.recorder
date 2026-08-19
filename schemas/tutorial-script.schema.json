@@ -1,0 +1,1486 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://geus.local/schemas/vtr-tutorial-script.json",
+  "title": "Guion de video tutorial (vtr)",
+  "description": "Guion declarativo que el recorder convierte en un MP4 narrado. Cada paso combina una narración (edge-tts) con acciones de navegador (Playwright); el paso dura lo que dure la más larga de las dos.",
+  "type": "object",
+  "required": [
+    "steps"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Título del tutorial (metadatos del MP4)."
+    },
+    "output": {
+      "type": "string",
+      "default": "salida/<nombre-del-guion>.mp4",
+      "description": "Ruta del MP4 de salida, relativa al guion. Debe terminar en .mp4."
+    },
+    "base_url": {
+      "type": "string",
+      "description": "URL base; las rutas relativas de `goto` se resuelven contra ella."
+    },
+    "voice": {
+      "type": "string",
+      "default": "es-MX-DaliaNeural",
+      "description": "Voz de edge-tts (ver `vtr voices`)."
+    },
+    "rate": {
+      "type": "string",
+      "default": "+0%",
+      "description": "Velocidad de habla, p.ej. '-10%' o '+15%'."
+    },
+    "pitch": {
+      "type": "string",
+      "default": "+0Hz",
+      "description": "Tono, p.ej. '-5Hz'."
+    },
+    "volume": {
+      "type": "string",
+      "default": "+0%",
+      "description": "Volumen relativo, p.ej. '+10%'."
+    },
+    "screen": {
+      "type": "string",
+      "default": "1600x900",
+      "description": "Tamaño del video, 'ANCHOxALTO'."
+    },
+    "width": {
+      "type": "integer",
+      "description": "Ancho del video (alternativa a `screen`)."
+    },
+    "height": {
+      "type": "integer",
+      "description": "Alto del video (alternativa a `screen`)."
+    },
+    "fps": {
+      "type": "integer",
+      "default": 30,
+      "minimum": 1,
+      "maximum": 60
+    },
+    "engine": {
+      "type": "string",
+      "enum": [
+        "xvfb",
+        "playwright"
+      ],
+      "default": "xvfb",
+      "description": "'xvfb': navegador visible en pantalla virtual capturada con ffmpeg (cursor real, cronometraje exacto). 'playwright': grabación nativa headless (sin X, cursor simulado)."
+    },
+    "browser_ui": {
+      "type": "boolean",
+      "default": true,
+      "description": "Mostrar la barra de direcciones y pestañas del navegador (motor xvfb)."
+    },
+    "cursor": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "on",
+        "off"
+      ],
+      "default": "auto",
+      "description": "Puntero simulado y ondas de clic sobre la página."
+    },
+    "lead_in": {
+      "type": "number",
+      "default": 1.0,
+      "description": "Segundos de margen antes del primer paso."
+    },
+    "lead_out": {
+      "type": "number",
+      "default": 1.5,
+      "description": "Segundos de margen tras el último paso."
+    },
+    "step_gap": {
+      "type": "number",
+      "default": 0.5,
+      "description": "Pausa por defecto entre pasos."
+    },
+    "timeout": {
+      "type": "number",
+      "default": 20.0,
+      "description": "Timeout por defecto de las acciones, en segundos."
+    },
+    "move_steps": {
+      "type": "integer",
+      "default": 25,
+      "description": "Suavidad del movimiento del puntero."
+    },
+    "crf": {
+      "type": "integer",
+      "default": 21,
+      "description": "Calidad x264 (menor = mejor y más pesado)."
+    },
+    "preset": {
+      "type": "string",
+      "default": "veryfast",
+      "description": "Preset de x264."
+    },
+    "locale": {
+      "type": "string",
+      "default": "es-MX"
+    },
+    "timezone": {
+      "type": "string",
+      "description": "Zona horaria del navegador, p.ej. 'America/Mexico_City'."
+    },
+    "color_scheme": {
+      "type": "string",
+      "enum": [
+        "light",
+        "dark"
+      ]
+    },
+    "user_agent": {
+      "type": "string"
+    },
+    "storage_state": {
+      "type": "string",
+      "description": "Ruta a un storage_state.json de Playwright para empezar ya autenticado."
+    },
+    "http_credentials": {
+      "type": "object",
+      "description": "Autenticación HTTP básica: {username, password}.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "extra_http_headers": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "ignore_https_errors": {
+      "type": "boolean",
+      "default": false
+    },
+    "subtitles": {
+      "type": "boolean",
+      "default": true,
+      "description": "Generar .srt y .vtt junto al video."
+    },
+    "chapters": {
+      "type": "boolean",
+      "default": true,
+      "description": "Incrustar capítulos (uno por paso narrado)."
+    },
+    "keep_temp": {
+      "type": "boolean",
+      "default": false,
+      "description": "Conservar archivos intermedios."
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Pasos del tutorial, en orden.",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "description": "Atajo: paso que solo narra este texto."
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Nombre del paso (título del capítulo)."
+              },
+              "narrate": {
+                "type": "string",
+                "description": "Texto que narrará la voz."
+              },
+              "voice": {
+                "type": "string",
+                "description": "Voz solo para este paso."
+              },
+              "rate": {
+                "type": "string"
+              },
+              "pitch": {
+                "type": "string"
+              },
+              "volume": {
+                "type": "string"
+              },
+              "wait_for_narration": {
+                "type": "boolean",
+                "default": true,
+                "description": "Esperar a que termine la narración antes del siguiente paso."
+              },
+              "pause_before": {
+                "type": "number",
+                "default": 0
+              },
+              "pause_after": {
+                "type": "number",
+                "description": "Sustituye a `step_gap` en este paso."
+              },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "title": "Acción",
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "back",
+                        "clear_overlays",
+                        "forward",
+                        "reload"
+                      ],
+                      "description": "Acción sin parámetros."
+                    },
+                    {
+                      "type": "object",
+                      "title": "goto",
+                      "description": "Navega a una URL. Si es relativa se resuelve contra `base_url`.",
+                      "properties": {
+                        "goto": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "url": {
+                                  "type": "string",
+                                  "description": "URL absoluta o ruta relativa (`/login`)."
+                                },
+                                "wait_until": {
+                                  "type": "string",
+                                  "description": "Evento de carga a esperar.",
+                                  "enum": [
+                                    "load",
+                                    "domcontentloaded",
+                                    "networkidle",
+                                    "commit"
+                                  ],
+                                  "default": "load"
+                                },
+                                "timeout": {
+                                  "type": "number",
+                                  "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "url"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `url`. URL absoluta o ruta relativa (`/login`)."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "goto"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "click",
+                      "description": "Hace clic en un elemento (con desplazamiento suave del puntero y onda de clic).",
+                      "properties": {
+                        "click": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                },
+                                "button": {
+                                  "type": "string",
+                                  "description": "Botón del ratón.",
+                                  "enum": [
+                                    "left",
+                                    "right",
+                                    "middle"
+                                  ],
+                                  "default": "left"
+                                },
+                                "clicks": {
+                                  "type": "integer",
+                                  "description": "Número de clics.",
+                                  "default": 1
+                                },
+                                "force": {
+                                  "type": "boolean",
+                                  "description": "Omitir comprobaciones de accionabilidad.",
+                                  "default": false
+                                },
+                                "move": {
+                                  "type": "boolean",
+                                  "description": "Desplazar el puntero suavemente hasta el elemento antes de actuar.",
+                                  "default": true
+                                },
+                                "timeout": {
+                                  "type": "number",
+                                  "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "selector"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `selector`. Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "click"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "dblclick",
+                      "description": "Doble clic sobre un elemento.",
+                      "properties": {
+                        "dblclick": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                },
+                                "move": {
+                                  "type": "boolean",
+                                  "description": "Desplazar el puntero suavemente hasta el elemento antes de actuar.",
+                                  "default": true
+                                },
+                                "timeout": {
+                                  "type": "number",
+                                  "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "selector"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `selector`. Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "dblclick"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "hover",
+                      "description": "Sitúa el puntero sobre un elemento (útil para menús desplegables).",
+                      "properties": {
+                        "hover": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                },
+                                "move": {
+                                  "type": "boolean",
+                                  "description": "Desplazar el puntero suavemente hasta el elemento antes de actuar.",
+                                  "default": true
+                                },
+                                "timeout": {
+                                  "type": "number",
+                                  "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "selector"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `selector`. Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "hover"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "fill",
+                      "description": "Rellena un campo de golpe (rápido, sin animación de tecleo).",
+                      "properties": {
+                        "fill": {
+                          "type": "object",
+                          "properties": {
+                            "selector": {
+                              "type": "string",
+                              "description": "Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                            },
+                            "text": {
+                              "type": "string",
+                              "description": "Texto a escribir."
+                            },
+                            "index": {
+                              "type": "integer",
+                              "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                            },
+                            "move": {
+                              "type": "boolean",
+                              "description": "Desplazar el puntero suavemente hasta el elemento antes de actuar.",
+                              "default": true
+                            },
+                            "timeout": {
+                              "type": "number",
+                              "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "selector",
+                            "text"
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "fill"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "type",
+                      "description": "Escribe carácter a carácter (se ve natural en el video).",
+                      "properties": {
+                        "type": {
+                          "type": "object",
+                          "properties": {
+                            "selector": {
+                              "type": "string",
+                              "description": "Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                            },
+                            "text": {
+                              "type": "string",
+                              "description": "Texto a teclear."
+                            },
+                            "delay": {
+                              "type": "number",
+                              "description": "Milisegundos entre teclas.",
+                              "default": 60
+                            },
+                            "clear": {
+                              "type": "boolean",
+                              "description": "Vaciar el campo antes de teclear.",
+                              "default": true
+                            },
+                            "index": {
+                              "type": "integer",
+                              "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                            },
+                            "move": {
+                              "type": "boolean",
+                              "description": "Desplazar el puntero suavemente hasta el elemento antes de actuar.",
+                              "default": true
+                            },
+                            "timeout": {
+                              "type": "number",
+                              "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "selector",
+                            "text"
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "press",
+                      "description": "Pulsa una tecla o combinación (`Enter`, `Control+S`, `Escape`).",
+                      "properties": {
+                        "press": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "key": {
+                                  "type": "string",
+                                  "description": "Tecla o combinación."
+                                },
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Elemento que recibe la pulsación (opcional; por defecto la página)."
+                                },
+                                "repeat": {
+                                  "type": "integer",
+                                  "description": "Repeticiones.",
+                                  "default": 1
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                },
+                                "timeout": {
+                                  "type": "number",
+                                  "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "key"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `key`. Tecla o combinación."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "press"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "select",
+                      "description": "Selecciona una opción de un `<select>`.",
+                      "properties": {
+                        "select": {
+                          "type": "object",
+                          "properties": {
+                            "selector": {
+                              "type": "string",
+                              "description": "Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                            },
+                            "value": {
+                              "type": "string",
+                              "description": "Valor de la opción."
+                            },
+                            "label": {
+                              "type": "string",
+                              "description": "Etiqueta visible de la opción."
+                            },
+                            "option_index": {
+                              "type": "integer",
+                              "description": "Índice de la opción."
+                            },
+                            "index": {
+                              "type": "integer",
+                              "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                            },
+                            "move": {
+                              "type": "boolean",
+                              "description": "Desplazar el puntero suavemente hasta el elemento antes de actuar.",
+                              "default": true
+                            },
+                            "timeout": {
+                              "type": "number",
+                              "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "selector"
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "select"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "check",
+                      "description": "Marca una casilla o radio.",
+                      "properties": {
+                        "check": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                },
+                                "move": {
+                                  "type": "boolean",
+                                  "description": "Desplazar el puntero suavemente hasta el elemento antes de actuar.",
+                                  "default": true
+                                },
+                                "timeout": {
+                                  "type": "number",
+                                  "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "selector"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `selector`. Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "check"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "uncheck",
+                      "description": "Desmarca una casilla.",
+                      "properties": {
+                        "uncheck": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                },
+                                "move": {
+                                  "type": "boolean",
+                                  "description": "Desplazar el puntero suavemente hasta el elemento antes de actuar.",
+                                  "default": true
+                                },
+                                "timeout": {
+                                  "type": "number",
+                                  "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "selector"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `selector`. Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "uncheck"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "upload",
+                      "description": "Sube archivos a un `<input type=file>`.",
+                      "properties": {
+                        "upload": {
+                          "type": "object",
+                          "properties": {
+                            "selector": {
+                              "type": "string",
+                              "description": "Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                            },
+                            "files": {
+                              "type": "array",
+                              "description": "Rutas de archivo (relativas al guion).",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "index": {
+                              "type": "integer",
+                              "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                            },
+                            "timeout": {
+                              "type": "number",
+                              "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "selector",
+                            "files"
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "upload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "focus",
+                      "description": "Da el foco a un elemento.",
+                      "properties": {
+                        "focus": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                },
+                                "timeout": {
+                                  "type": "number",
+                                  "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "selector"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `selector`. Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "focus"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "clear",
+                      "description": "Vacía un campo de texto.",
+                      "properties": {
+                        "clear": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                },
+                                "timeout": {
+                                  "type": "number",
+                                  "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "selector"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `selector`. Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "clear"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "scroll",
+                      "description": "Desplaza la página hasta un elemento o a una posición concreta.",
+                      "properties": {
+                        "scroll": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Elemento al que desplazarse."
+                                },
+                                "x": {
+                                  "type": "number",
+                                  "description": "Posición horizontal absoluta en píxeles."
+                                },
+                                "y": {
+                                  "type": "number",
+                                  "description": "Posición vertical absoluta en píxeles."
+                                },
+                                "by": {
+                                  "type": "number",
+                                  "description": "Desplazamiento relativo en píxeles (positivo = hacia abajo)."
+                                },
+                                "smooth": {
+                                  "type": "boolean",
+                                  "description": "Desplazamiento animado.",
+                                  "default": true
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `selector`. Elemento al que desplazarse."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "scroll"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "wait",
+                      "description": "Pausa fija en segundos.",
+                      "properties": {
+                        "wait": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "seconds": {
+                                  "type": "number",
+                                  "description": "Segundos a esperar."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "seconds"
+                              ]
+                            },
+                            {
+                              "type": "number",
+                              "description": "Abreviatura de `seconds`. Segundos a esperar."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "wait"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "wait_for",
+                      "description": "Espera a que se cumpla una condición antes de continuar.",
+                      "properties": {
+                        "wait_for": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Espera a que el elemento alcance `state`."
+                                },
+                                "state": {
+                                  "type": "string",
+                                  "description": "Estado esperado del elemento.",
+                                  "enum": [
+                                    "attached",
+                                    "detached",
+                                    "visible",
+                                    "hidden"
+                                  ],
+                                  "default": "visible"
+                                },
+                                "text": {
+                                  "type": "string",
+                                  "description": "Espera a que este texto aparezca en la página."
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "description": "Espera a que la URL coincida (admite patrón glob)."
+                                },
+                                "load_state": {
+                                  "type": "string",
+                                  "description": "Espera un estado de carga de la página.",
+                                  "enum": [
+                                    "load",
+                                    "domcontentloaded",
+                                    "networkidle"
+                                  ]
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                },
+                                "timeout": {
+                                  "type": "number",
+                                  "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `selector`. Espera a que el elemento alcance `state`."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "wait_for"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "highlight",
+                      "description": "Resalta un elemento con un marco animado (no bloquea; se retira solo).",
+                      "properties": {
+                        "highlight": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                                },
+                                "duration": {
+                                  "type": "number",
+                                  "description": "Segundos que permanece el resaltado.",
+                                  "default": 3.0
+                                },
+                                "label": {
+                                  "type": "string",
+                                  "description": "Etiqueta opcional pegada al marco."
+                                },
+                                "color": {
+                                  "type": "string",
+                                  "description": "Color CSS del marco.",
+                                  "default": "#ff3d71"
+                                },
+                                "padding": {
+                                  "type": "number",
+                                  "description": "Margen del marco en píxeles.",
+                                  "default": 6
+                                },
+                                "scroll": {
+                                  "type": "boolean",
+                                  "description": "Desplazar el elemento a la vista primero.",
+                                  "default": true
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "selector"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `selector`. Selector de Playwright: CSS, `text=...`, `role=button[name=\"Guardar\"]`, `#id`, etc."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "highlight"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "note",
+                      "description": "Muestra un cartel de texto sobre el video (llamada de atención).",
+                      "properties": {
+                        "note": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "Texto del cartel."
+                                },
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Anclar el cartel junto a este elemento."
+                                },
+                                "duration": {
+                                  "type": "number",
+                                  "description": "Segundos visible.",
+                                  "default": 4.0
+                                },
+                                "position": {
+                                  "type": "string",
+                                  "description": "Posición cuando no hay `selector`.",
+                                  "enum": [
+                                    "top",
+                                    "bottom",
+                                    "center",
+                                    "top-left",
+                                    "top-right",
+                                    "bottom-left",
+                                    "bottom-right"
+                                  ],
+                                  "default": "bottom"
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "text"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `text`. Texto del cartel."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "note"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "clear_overlays",
+                      "description": "Retira de inmediato resaltados y carteles visibles.",
+                      "properties": {
+                        "clear_overlays": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {},
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "clear_overlays"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "mouse_move",
+                      "description": "Mueve el puntero a un elemento o a coordenadas concretas.",
+                      "properties": {
+                        "mouse_move": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Elemento destino."
+                                },
+                                "x": {
+                                  "type": "number",
+                                  "description": "Coordenada X."
+                                },
+                                "y": {
+                                  "type": "number",
+                                  "description": "Coordenada Y."
+                                },
+                                "steps": {
+                                  "type": "integer",
+                                  "description": "Pasos de interpolación (más = más lento y suave).",
+                                  "default": 25
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `selector`. Elemento destino."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "mouse_move"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "drag",
+                      "description": "Arrastra un elemento sobre otro.",
+                      "properties": {
+                        "drag": {
+                          "type": "object",
+                          "properties": {
+                            "source": {
+                              "type": "string",
+                              "description": "Selector del elemento a arrastrar."
+                            },
+                            "target": {
+                              "type": "string",
+                              "description": "Selector del destino."
+                            },
+                            "timeout": {
+                              "type": "number",
+                              "description": "Timeout en segundos para esta acción (por defecto el del guion)."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "source",
+                            "target"
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "drag"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "screenshot",
+                      "description": "Guarda una captura PNG (además del video).",
+                      "properties": {
+                        "screenshot": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "path": {
+                                  "type": "string",
+                                  "description": "Ruta de salida, relativa al directorio de salida."
+                                },
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Capturar solo este elemento."
+                                },
+                                "full_page": {
+                                  "type": "boolean",
+                                  "description": "Capturar la página completa.",
+                                  "default": false
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `path`. Ruta de salida, relativa al directorio de salida."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "screenshot"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "eval",
+                      "description": "Ejecuta JavaScript en la página (escotilla de escape).",
+                      "properties": {
+                        "eval": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "expression": {
+                                  "type": "string",
+                                  "description": "Expresión o función JS."
+                                },
+                                "selector": {
+                                  "type": "string",
+                                  "description": "Si se indica, el elemento se pasa como argumento."
+                                },
+                                "index": {
+                                  "type": "integer",
+                                  "description": "Índice (base 0) cuando el selector coincide con varios elementos."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "expression"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "description": "Abreviatura de `expression`. Expresión o función JS."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "eval"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "back",
+                      "description": "Vuelve a la página anterior del historial.",
+                      "properties": {
+                        "back": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {},
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "back"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "forward",
+                      "description": "Avanza en el historial.",
+                      "properties": {
+                        "forward": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {},
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "forward"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "reload",
+                      "description": "Recarga la página actual.",
+                      "properties": {
+                        "reload": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {},
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "reload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "title": "zoom",
+                      "description": "Cambia el zoom de la página (útil para acercarse a un detalle).",
+                      "properties": {
+                        "zoom": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "factor": {
+                                  "type": "number",
+                                  "description": "Factor de zoom, 1 = 100%.",
+                                  "default": 1.0
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "factor"
+                              ]
+                            },
+                            {
+                              "type": "number",
+                              "description": "Abreviatura de `factor`. Factor de zoom, 1 = 100%."
+                            }
+                          ]
+                        },
+                        "comment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "zoom"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

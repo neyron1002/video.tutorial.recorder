@@ -1,0 +1,27 @@
+# Entorno
+.env
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+
+# Instalación editable dentro del contenedor
+src/*.egg-info/
+
+# Salidas de grabación
+salida/
+.tmp-prueba/
+grabaciones/
+capturas/
+.vtr-*/
+*.mp4
+*.webm
+*.mp3
+*.srt
+*.vtt
+*.report.json
+
+# Sistema
+.DS_Store

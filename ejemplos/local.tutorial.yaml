@@ -1,0 +1,41 @@
+# Prueba de humo sin dependencias externas: graba una página local.
+# Solo necesita internet para la síntesis de voz (edge-tts).
+#   vtr record ejemplos/local.tutorial.yaml
+title: "Prueba local del recorder"
+output: "../salida/prueba-local.mp4"
+base_url: "file:///workspace/ejemplos/local"
+
+voice: "es-MX-DaliaNeural"
+screen: "1280x720"
+fps: 24
+engine: "xvfb"
+browser_ui: true
+lead_in: 0.5
+lead_out: 1.0
+
+steps:
+  - name: "Introducción"
+    narrate: "Vamos a llenar el formulario de registro paso a paso."
+    actions:
+      - goto: "/pagina.html"
+      - wait_for: { selector: "#titulo" }
+      - highlight: { selector: "nav", label: "Menú", duration: 3 }
+
+  - name: "Llenar el formulario"
+    narrate: "Escribimos el nombre y elegimos el país en la lista desplegable."
+    actions:
+      - type: { selector: "#nombre", text: "Juan Manuel", delay: 70 }
+      - select: { selector: "#pais", value: "MX" }
+
+  - name: "Guardar"
+    narrate: "Al pulsar Guardar aparece la confirmación."
+    actions:
+      - click: "#guardar"
+      - wait_for: { selector: "#resultado", state: "visible" }
+      - note: { text: "Registro creado", duration: 3 }
+      - screenshot: { path: "capturas/prueba-local.png" }
+
+  - name: "Cierre"
+    narrate: "Y con esto terminamos la prueba."
+    actions:
+      - scroll: { selector: "#pie" }

@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- Página de prueba local: permite verificar el recorder sin depender de
+     ninguna aplicación externa.  vtr record ejemplos/local.tutorial.yaml -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>App de prueba</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; background: #f5f7fb; color: #1b2030; }
+  nav { background: #1b2030; color: #fff; padding: 14px 28px; display: flex; gap: 24px; align-items: center; }
+  nav b { font-size: 18px; }
+  nav a { color: #cfd6e6; text-decoration: none; }
+  main { padding: 40px; max-width: 720px; }
+  .card { background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
+  label { display: block; margin: 18px 0 6px; font-weight: 600; }
+  input, select { width: 100%; padding: 10px 12px; border: 1px solid #ccd3e0; border-radius: 8px; font-size: 15px; }
+  button { margin-top: 22px; background: #2f6df6; color: #fff; border: 0; padding: 12px 22px;
+           border-radius: 8px; font-size: 15px; cursor: pointer; }
+  #resultado { margin-top: 20px; padding: 14px; border-radius: 8px; background: #e8f6ec; display: none; }
+  .alto { height: 900px; }
+</style>
+</head>
+<body>
+  <nav><b>Demo</b><a href="#">Inicio</a><a href="#" id="reportes">Reportes</a></nav>
+  <main>
+    <div class="card">
+      <h1 id="titulo">Nuevo registro</h1>
+      <label for="nombre">Nombre</label>
+      <input id="nombre" placeholder="Escribe un nombre">
+      <label for="pais">País</label>
+      <select id="pais">
+        <option value="">Elige…</option>
+        <option value="MX">México</option>
+        <option value="CO">Colombia</option>
+      </select>
+      <button id="guardar">Guardar</button>
+      <div id="resultado">Registro guardado correctamente.</div>
+    </div>
+    <div class="alto"></div>
+    <div class="card" id="pie">Sección final del documento.</div>
+  </main>
+  <script>
+    document.getElementById('guardar').addEventListener('click', () => {
+      setTimeout(() => { document.getElementById('resultado').style.display = 'block'; }, 400);
+    });
+  </script>
+</body>
+</html>

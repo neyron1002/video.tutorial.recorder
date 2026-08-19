@@ -1,0 +1,43 @@
+# Contenedor de desarrollo y grabación.
+#
+#   docker compose build
+#   docker compose up -d
+#   docker compose exec dev bash
+#
+# Único volumen compartido con el host: el workspace (este directorio).
+# Todo lo demás —incluida la sesión de los agentes de IA— es efímero.
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        USER_UID: "${UID:-1000}"
+        USER_GID: "${GID:-1000}"
+        TZ: "${TZ:-America/Mexico_City}"
+    image: video-tutorial-recorder:dev
+    container_name: vtr-dev
+    hostname: vtr
+    init: true
+    stdin_open: true
+    tty: true
+    working_dir: /workspace
+    # Chromium necesita memoria compartida amplia para páginas pesadas.
+    shm_size: "2gb"
+    volumes:
+      - .:/workspace
+    environment:
+      DISPLAY: ":99"
+      SCREEN_SIZE: "1920x1080x24"
+      TZ: "${TZ:-America/Mexico_City}"
+      VTR_NO_SANDBOX: "1"
+      # Autenticación efímera: si defines estas variables en .env se usan como
+      # credenciales de sesión; si no, cada agente pedirá login interactivo.
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GOOGLE_API_KEY: "${GOOGLE_API_KEY:-}"
+    env_file:
+      - path: .env
+        required: false
+    command: ["sleep", "infinity"]

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "video-tutorial-recorder"
+version = "0.1.0"
+description = "Herramienta para agentes de IA: graba video tutoriales de aplicaciones web con Playwright (navegación) y edge-tts (narración)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "geus" }]
+dependencies = [
+  "playwright>=1.47",
+  "edge-tts>=7.0.0",
+  "PyYAML>=6.0",
+]
+
+[project.scripts]
+vtr = "vtr.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+vtr = ["assets/*.js", "assets/*.yaml"]

@@ -1,0 +1,4 @@
+# Dependencias de runtime del contenedor (se instalan en /opt/venv durante el build).
+playwright>=1.47
+edge-tts>=7.0.0
+PyYAML>=6.0

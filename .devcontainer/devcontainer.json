@@ -1,0 +1,26 @@
+{
+  "name": "Video Tutorial Recorder",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "dev",
+  "overrideCommand": false,
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-playwright.playwright",
+        "redhat.vscode-yaml"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "yaml.schemas": {
+          "./schemas/tutorial-script.schema.json": ["**/*.tutorial.yaml", "**/tutorial*.yaml"]
+        }
+      }
+    }
+  },
+  "postCreateCommand": "mkdir -p schemas && vtr schema -o schemas/tutorial-script.schema.json && vtr doctor || true"
+}
